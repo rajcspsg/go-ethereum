@@ -1,11 +1,11 @@
 FROM ubuntu:latest as builder
 
-ENV DEBIAN_FRONTEND noninteractive
-ENV INITRD No
-ENV LANG en_US.UTF-8
-ENV GOVERSION 1.9
-ENV GOROOT /opt/go
-ENV GOPATH /root/.go
+ENV DEBIAN_FRONTEND=noninteractive \
+ INITRD=No \
+ LANG=en_US.UTF-8 \
+ GOVERSION=1.9 \
+ GOROOT=/opt/go \
+ GOPATH=/root/.go 
 RUN  apt-get update \
   && apt-get install -y software-properties-common \
   && apt-get install -y wget \
@@ -22,12 +22,17 @@ RUN  apt-get update \
     mkdir $GOPATH
 
 ADD . /go-ethereum
-RUN cd /go-ethereum && make geth
+RUN mkdir -p /usr/local/config \
+    && mkdir -p /home/ubuntu/eth-dev \
+    && mkdir -p /usr/local/scripts \
+    && cd /go-ethereum && make geth
 
 
 COPY --from=builder /go-ethereum/build/bin/geth /usr/local/bin/
-
+COPY --from=builder /go-ethereum/scripts/entry-point.sh /usr/local/bin/
+COPY --from=builder /go-ethereum/genesis/genesis.json /usr/local/config/
+           
 EXPOSE 8545 8546 30303 30303/udp
-ENTRYPOINT ["geth"]
+ENTRYPOINT ["entry-point.sh"]
 
 
